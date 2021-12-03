@@ -1,4 +1,4 @@
-# PKTableLabelling
+# PKTablePreprocessing
 
 Extract Tables from PubMed OA datasets xml files, annotate these with prodigy annotation software and custom recipe. 
 
