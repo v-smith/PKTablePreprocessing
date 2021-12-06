@@ -6,8 +6,6 @@ from typing import List, Tuple, Dict, Any, Union
 import itertools
 import hashlib
 import pickle
-from IPython.display import HTML, Javascript
-import numpy as np
 
 
 def parse_xml_tables(json_list: List) -> List:
@@ -263,51 +261,75 @@ def match(s: str) -> bool:
 
 
 def process_table_dfs(table_dfs_list: List) -> List[Dict]:
+
     processed_table_dfs_list = []
     for entry in table_dfs_list:
         my_df = entry["table_df"]
         caption = entry["caption"]
         ident = entry["identifier"]
         link = entry["link"]
-        # index_of_null_rows = my_df[my_df.isnull().all(axis=1)].index
-        #TODO: WHAT DOES THIS DO!?!?!?
-        #consecutive_list1 = [as_range(g) for _, g in
-                            #itertools.groupby([9, 10, 12], key=lambda n, c=itertools.count(): n - next(c))]
+
+        #my_df = pd.DataFrame([['tom', 10], ['nick', 15], [None, None], [None, None], ['juli', 14], ['nick', 15], [None, None], [None, None], ['juli', 14], ['tom', 10], ['nick', 15]])
+        index_of_null_rows = my_df[my_df.isnull().all(axis=1)].index.tolist()
+        index_of_part_null_rows = my_df[my_df.isnull().any(axis=1)].index.tolist()
         consecutive_list1 = [as_range(p) for _, p in
-                             itertools.groupby([13,14,15], key=lambda n, c=itertools.count(): n - next(c))]
+                             itertools.groupby(index_of_null_rows, key=lambda n, c=itertools.count(): n - next(c))]
         consecutive_list = [x for x in consecutive_list1 if x is not None]
-        if len(consecutive_list) == 1:
-            df1, df1_header, df2, df2_header = split_on_subheader_nulls(ident, my_df, consecutive_list)
-            if df2_header != "1":
-                processed_table_dfs_list.append({"table_df": df1, "caption": caption, "identifier": df1_header, "link": link})
-                processed_table_dfs_list.append({"table_df": df2, "caption": caption, "identifier": df2_header, "link": link})
-            else:
-                processed_table_dfs_list.append({"table_df": df1, "caption": caption, "identifier": df1_header, "link": link})
+        consecutive_list_updated = []
+        for tup1 in consecutive_list:
+            if (tup1[1] + 1) not in index_of_part_null_rows:
+                consecutive_list_updated.append(tup1)
+
+        if len(consecutive_list_updated) >= 1:
+            dfs_list = split_on_subheader_nulls(ident, my_df, consecutive_list_updated)
+            for dfs in dfs_list:
+                if dfs["header"] != "1":
+                    processed_table_dfs_list.append({"table_df": dfs["df"], "caption": caption, "identifier": dfs["header"], "link": link})
         else:
             processed_table_dfs_list.append(entry)
-
+    a=1
     return processed_table_dfs_list
 
 
-def split_on_subheader_nulls(ident: str, my_df: pd.DataFrame, consecutive_list: List):
-    consecutive_list = [item for sublist in consecutive_list for item in sublist]
-    df1 = my_df[:consecutive_list[0]]
-    df2 = my_df[consecutive_list[0]:]
-    df1 = tidy_up_null_rows_df(df1)
-    df2 = tidy_up_null_rows_df(df2)
-    if not df2.empty:
-        new_header = df2.iloc[0]
-        df2 = df2[1:]
-        df2.columns = new_header
-        df2 = df2.reset_index(drop=True)
-        df2_label = f"{ident} SPLIT-B"
-        df1_label = f"{ident} SPLIT-A"
-    else:
-        df1_label = ident
-        df2 = 1
-        df2_label = "1"
+def split_df_on_index_list(index_list: List):
+    split_list = []
+    for value_pair in index_list:
+        split_value = value_pair[0]
+        split_list.append(split_value)
+    return split_list
 
-    return df1, df1_label, df2, df2_label
+
+def split_df_on_split_list(ident: str, split_list: List, my_df: pd.DataFrame):
+    dfs_list = []
+    df1 = my_df[:split_list[0]]
+    counter = 1
+    dfs_list.append({"df": df1, "header": f"{ident} SPLIT-{counter}"})
+    split_list.append((len(my_df)))
+    for first, second in zip(split_list, split_list[1:]):
+        counter += 1
+        df2 = my_df[first:second]
+        if not df2.empty:
+            new_header = df2.iloc[0]
+            df2 = df2[1:]
+            df2.columns = new_header
+            df2 = df2.reset_index(drop=True)
+            df2_label = f"{ident} SPLIT-{counter}"
+            dfs_list.append({"df": df2, "header": df2_label})
+        else:
+            df2 = 1
+            df2_label = "1"
+            print("empty_df")
+    a=1
+    return dfs_list
+
+
+def split_on_subheader_nulls(ident: str, my_df: pd.DataFrame, consecutive_list: List):
+    #consecutive_list = [item for sublist in consecutive_list for item in sublist]
+    split_list = split_df_on_index_list(consecutive_list
+                                        )
+    dfs_list = split_df_on_split_list(ident=ident, split_list=split_list, my_df=my_df)
+    a=1
+    return dfs_list
 
 
 def tidy_up_null_rows_df(my_df: pd.DataFrame) -> pd.DataFrame:
@@ -335,10 +357,11 @@ def convert_htmls_to_dfs(json_list: List) -> List:
             pd_table = pd.read_html(html, header=None)  # header=[0]
             table_df = pd_table[0]
             df_list.append({"table_df": table_df, "caption": caption, "identifier": text, "link": link})
-        except ValueError:
+        except:
+            print(text)
             counter += 1
-        a=1
     print(f"Could not convert {counter} htmls to dataframes")
+    a=1
     return df_list
 
 
