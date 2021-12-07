@@ -8,24 +8,23 @@ import hashlib
 import pickle
 
 
-def parse_xml_tables(json_list: List) -> List:
+def parse_xml_tables(json_list: List, pkl_file_name: str) -> List:
     # convert xml tables to dataframes
     table_dfs_list = convert_htmls_to_dfs(json_list)
     #demo_df = table_dfs_list[0]["table_df"]
 
     # split any 'modelling' tables with mid-table subheaders (marked with double null rows)
-    processed_table_dfs_list = process_table_dfs(table_dfs_list)
+    #processed_table_dfs_list = process_table_dfs(table_dfs_list)
     #demo_dfa = processed_table_dfs_list[0]["table_df"]
     #demo_dfb = processed_table_dfs_list[1]["table_df"]
 
     #parse to value dicts
-    parsed_table_dict_list = parse_tables_to_value_dicts(processed_table_dfs_list)
+    parsed_table_dict_list = parse_tables_to_value_dicts(table_dfs_list)
     #demo_dict_list = parsed_table_dict_list[0]["value_dicts"]
-    # drop empty value lists
-    final_table_dict_list = [x for x in parsed_table_dict_list if x["value_dicts"]]
-    jsonl_text_dict_list, hash_list = covert_to_labelling_jsonl(final_table_dict_list)
-    write_hashes_html_pickle(hash_list)
-    my_pickle = pickle.load(open('../data/json/parsed_table_jsons/table_hashes_2.pkl', 'rb'))
+
+    jsonl_text_dict_list, hash_list = covert_to_ner_jsonl(parsed_table_dict_list)
+    write_hashes_html_pickle(hash_list, pkl_file_name)
+    my_pickle = pickle.load(open("../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, 'rb'))
     assert len(my_pickle) == len(hash_list)
     a=1
     return jsonl_text_dict_list
@@ -61,14 +60,14 @@ def hash_html_tables(html, text):
     return {"hash": hashed_html, "html": html, "text": text}
 
 
-def write_hashes_html_pickle(hash_list):
+def write_hashes_html_pickle(hash_list: List, pkl_file_name: str):
     hash_dict = {}
     for item in hash_list:
         hash = item["hash"]
         html = item["html"]
         hash_dict[hash] = html
 
-    with open(r"../data/json/parsed_table_jsons/table_hashes_2.pkl", "wb") as f:
+    with open(r"../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, "wb") as f:
         pickle.dump(hash_dict, f)
 
     #my_pickle = pickle.load(open('../data/parsed_table_jsons/table_hashes_2.pkl', 'rb'))
@@ -89,6 +88,42 @@ def convert_to_set(name: str, list_of_dicts: List[Dict]) -> List[Dict]:
     return row_non
 
 
+def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
+    all_tables_for_jsonl = []
+    hash_list = []
+    for item in final_table_dict_list:
+        # get unique non_numeric cell values
+        non_numeric_vals = item["non_numeric_values"]
+        unique_non_num = [dict(t) for t in {tuple(d.items()) for d in non_numeric_vals}]
+        table_df = item["table_df"]
+        id = item["identifier"]
+        dics = item["value_dicts"]
+        link = item["link"]
+
+        # drop if "Unnamed"
+        #to fix this change all nans from type str to type float
+        unique_non_num_strs = [{key: (str(val) if key == "value" else val) for key, val in sub.items()} for sub in unique_non_num]
+        all_non_vals_cleaned = [x for x in unique_non_num_strs if not re.match("Unnamed", x["value"])]
+
+        text_all_vals = [x["value"] for x in all_non_vals_cleaned]
+        text_label_col = [x["column"] for x in all_non_vals_cleaned]
+        text_label_row = [x["row"] for x in all_non_vals_cleaned]
+
+        table_for_jsonl = []
+        for t, c, r in zip(text_all_vals, text_label_col, text_label_row):
+            styled_html = style_dataframes(table_df, t, c, r)
+            hash_dict = hash_html_tables(styled_html, t)
+            hash_list.append(hash_dict)
+            table_for_jsonl.append({"text": t, "col": c, "row": r, "html": hash_dict["hash"], "table_id": id,
+                                    "meta": {"PMC_Link": link, "Table_ID": id}}),
+
+        sorted_table_for_jsonl = sorted(table_for_jsonl, key=lambda d: (d['col'], d["row"]))
+        all_tables_for_jsonl.extend(sorted_table_for_jsonl)
+        a = 1
+    return all_tables_for_jsonl, hash_list
+
+
+'''
 def covert_to_labelling_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
     all_tables_for_jsonl = []
     hash_list = []
@@ -118,7 +153,7 @@ def covert_to_labelling_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
 
         a = 1
     return sorted_all_tables_for_jsonl, hash_list
-
+'''
 
 def parse_tables_to_value_dicts(processed_table_dfs_list: List) -> List:
     final_parsed_list = []
@@ -139,9 +174,11 @@ def parse_tables_to_value_dicts(processed_table_dfs_list: List) -> List:
         processed_row_headers = process_header_cols(row_headers)
         numeric_values, non_numeric_values = determine_numeric_cells(columns, processed_row_headers)
         value_dicts = get_value_dict(numeric_values, non_numeric_values)
-        final_parsed_list.append({"value_dicts": value_dicts, "identifier": identifier, "link": link, "caption": caption, "table_df": updated_table_df})
+        final_parsed_list.append({"value_dicts": value_dicts, "non_numeric_values": non_numeric_values, "identifier": identifier, "link": link, "caption": caption, "table_df": updated_table_df})
+
+    final_table_dict_list = [x for x in final_parsed_list if x["value_dicts"]]
     a=1
-    return final_parsed_list
+    return final_table_dict_list
 
 
 def get_value_dict(numeric_values: List[Dict], non_numeric_values: List[Dict]) -> \
@@ -268,6 +305,7 @@ def process_table_dfs(table_dfs_list: List) -> List[Dict]:
         caption = entry["caption"]
         ident = entry["identifier"]
         link = entry["link"]
+
 
         #my_df = pd.DataFrame([['tom', 10], ['nick', 15], [None, None], [None, None], ['juli', 14], ['nick', 15], [None, None], [None, None], ['juli', 14], ['tom', 10], ['nick', 15]])
         index_of_null_rows = my_df[my_df.isnull().all(axis=1)].index.tolist()
