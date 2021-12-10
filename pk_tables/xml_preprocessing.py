@@ -42,7 +42,8 @@ def tables_to_dict(path_to_file) -> List:
         html = html_template.format(caption, table_xml)
         table_dict = {"text": f"PMC{pmc} | {label} | DOI: {doi}",
                       "pmc_link": f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{pmc}",
-                      "html": html}
+                      "html": html,
+                      "caption": caption}
         table_dicts.append(table_dict)
         a = 1
 
@@ -101,7 +102,7 @@ def apply_to_all(file_list, json_path):
     with jsonlines.open(json_path, mode='w') as writer:
         writer.write_all(table_list)
     a=1
-    print(f"(Total Count= {total_count}")
+    print(f"(Total Count of Exceptions= {total_count}")
     return table_list
 
 

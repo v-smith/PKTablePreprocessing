@@ -8,51 +8,72 @@ import hashlib
 import pickle
 
 
-def parse_xml_tables(json_list: List, pkl_file_name: str) -> List:
+def parse_xml_tables(json_list: List[Dict], pkl_file_name: str) -> List[Dict]:
+    """
+    Converts list of xml tables to list of html tables for labelling
+    """
     # convert xml tables to dataframes
     table_dfs_list = convert_htmls_to_dfs(json_list)
-    #demo_df = table_dfs_list[0]["table_df"]
+    # demo_df = table_dfs_list[0]["table_df"]
 
-    # split any 'modelling' tables with mid-table subheaders (marked with double null rows)
-    #processed_table_dfs_list = process_table_dfs(table_dfs_list)
-    #demo_dfa = processed_table_dfs_list[0]["table_df"]
-    #demo_dfb = processed_table_dfs_list[1]["table_df"]
-
-    #parse to value dicts
+    # parse to value dicts
     parsed_table_dict_list = parse_tables_to_value_dicts(table_dfs_list)
-    #demo_dict_list = parsed_table_dict_list[0]["value_dicts"]
+    # demo_dict_list = parsed_table_dict_list[0]["value_dicts"]
 
+    #convert to labelling format
     jsonl_text_dict_list, hash_list = covert_to_ner_jsonl(parsed_table_dict_list)
     write_hashes_html_pickle(hash_list, pkl_file_name)
     my_pickle = pickle.load(open("../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, 'rb'))
     assert len(my_pickle) == len(hash_list)
-    a=1
+    a = 1
     return jsonl_text_dict_list
 
 
-def style_dataframes(df, text, column, row):
-    s = df.style.apply(styling_specific_cell, row_idx=row, col_idx=column, text=text,
-                       axis=None).set_properties(**{'border': '1.3px solid black', 'color': 'black'})
+def style_dataframes_captions(df):
+    """
+    styles dataframe so it has black border
+    """
+    s = df.style.set_properties(**{'border': '1.3px solid black', 'color': 'black'})
     styled_html = s.render()
-    #file = open("../data/parsed_table_jsons/index.html", "w")
-    #file.write(styled_html)
-    #file.close()
+    # file = open("../data/parsed_table_jsons/index.html", "w")
+    # file.write(styled_html)
+    # file.close()
 
     return styled_html
 
 
-def styling_specific_cell(x, row_idx, col_idx, text):
+def style_dataframes(df, column: int, row: int):
+    """
+    styles dataframe, so it has black border and yellow highlighting on cell of interest
+    """
+    s = df.style.apply(styling_specific_cell, row_idx=row, col_idx=column,
+                       axis=None).set_properties(**{'border': '1.3px solid black', 'color': 'black'})
+    styled_html = s.render()
+    # file = open("../data/parsed_table_jsons/index.html", "w")
+    # file.write(styled_html)
+    # file.close()
+
+    return styled_html
+
+
+def styling_specific_cell(x, row_idx: int, col_idx: int):
+    """
+    Styles a specific dataframe cell in yellow
+    """
     color = 'background-color: yellow; font-weight: bold'
     font = "font-weight: bold"
     df_styler = pd.DataFrame('', index=x.index, columns=x.columns)
     df_styler.loc[0, :] = font
-    #df_styler.loc["level_1"] = font
+    # df_styler.loc["level_1"] = font
     df_styler.loc[row_idx, col_idx] = color
-    a=1
+    a = 1
     return df_styler
 
 
 def hash_html_tables(html, text):
+    """
+    Create Unique hash for each html table
+    """
     encoded_html = html.encode("utf8")
     h = hashlib.sha3_256()
     h.update(encoded_html)
@@ -61,6 +82,9 @@ def hash_html_tables(html, text):
 
 
 def write_hashes_html_pickle(hash_list: List, pkl_file_name: str):
+    """
+    Writes html hash dictionaries into a pkl file
+    """
     hash_dict = {}
     for item in hash_list:
         hash = item["hash"]
@@ -70,17 +94,15 @@ def write_hashes_html_pickle(hash_list: List, pkl_file_name: str):
     with open(r"../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, "wb") as f:
         pickle.dump(hash_dict, f)
 
-    #my_pickle = pickle.load(open('../data/parsed_table_jsons/table_hashes_2.pkl', 'rb'))
-    #assert len(my_pickle) == len(hash_list)
-    a=1
-
-
-def df_style(val):
-    # bolding a value???
-    return 'font-weight: bold'
+    # my_pickle = pickle.load(open('../data/parsed_table_jsons/table_hashes_2.pkl', 'rb'))
+    # assert len(my_pickle) == len(hash_list)
+    a = 1
 
 
 def convert_to_set(name: str, list_of_dicts: List[Dict]) -> List[Dict]:
+    """
+    Sets a list of dictionaries based on a certain key
+    """
     a = 1
     row_non = [y[name] for y in list_of_dicts]
     row_non = [item for sublist in row_non for item in sublist]
@@ -89,6 +111,12 @@ def convert_to_set(name: str, list_of_dicts: List[Dict]) -> List[Dict]:
 
 
 def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
+    """
+    Subsets non-numeric cells for labelling in prodigy
+    Adds captions for labelling
+    Styles html table so there is one per cell with appropriate cell highlighted
+    Hashes html tables and creates pkl file for these
+    """
     all_tables_for_jsonl = []
     hash_list = []
     for item in final_table_dict_list:
@@ -101,8 +129,9 @@ def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
         link = item["link"]
 
         # drop if "Unnamed"
-        #to fix this change all nans from type str to type float
-        unique_non_num_strs = [{key: (str(val) if key == "value" else val) for key, val in sub.items()} for sub in unique_non_num]
+        # to fix this change all nans from type str to type float
+        unique_non_num_strs = [{key: (str(val) if key == "value" else val) for key, val in sub.items()} for sub in
+                               unique_non_num]
         all_non_vals_cleaned = [x for x in unique_non_num_strs if not re.match("Unnamed", x["value"])]
 
         text_all_vals = [x["value"] for x in all_non_vals_cleaned]
@@ -110,15 +139,30 @@ def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
         text_label_row = [x["row"] for x in all_non_vals_cleaned]
 
         table_for_jsonl = []
+        if item["caption"]:
+            caption = item["caption"]
+            caption_html = style_dataframes_captions(table_df)
+            caption_html_hash_dict = hash_html_tables(caption_html, caption)
+            hash_list.append(caption_html_hash_dict)
+            table_for_jsonl.insert(0,
+                                   {"text": caption, "col": "na", "row": "na", "html": caption_html_hash_dict["hash"],
+                                    "table_id": id, "meta": {"PMC_Link": link, "Table_ID": id}})
+        else:
+            print(id, link)
+
+        cells_for_jsonl = []
         for t, c, r in zip(text_all_vals, text_label_col, text_label_row):
-            styled_html = style_dataframes(table_df, t, c, r)
+            styled_html = style_dataframes(table_df, c, r)
             hash_dict = hash_html_tables(styled_html, t)
             hash_list.append(hash_dict)
-            table_for_jsonl.append({"text": t, "col": c, "row": r, "html": hash_dict["hash"], "table_id": id,
+            cells_for_jsonl.append({"text": t, "col": c, "row": r, "html": hash_dict["hash"], "table_id": id,
                                     "meta": {"PMC_Link": link, "Table_ID": id}}),
 
-        sorted_table_for_jsonl = sorted(table_for_jsonl, key=lambda d: (d['col'], d["row"]))
-        all_tables_for_jsonl.extend(sorted_table_for_jsonl)
+        sorted_cells_for_jsonl = sorted(cells_for_jsonl, key=lambda d: (d['col'], d["row"]))
+        table_for_jsonl.extend(sorted_cells_for_jsonl)
+        # insert the caption at front of the table
+
+        all_tables_for_jsonl.extend(table_for_jsonl)
         a = 1
     return all_tables_for_jsonl, hash_list
 
@@ -155,7 +199,12 @@ def covert_to_labelling_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
     return sorted_all_tables_for_jsonl, hash_list
 '''
 
-def parse_tables_to_value_dicts(processed_table_dfs_list: List) -> List:
+
+def parse_tables_to_value_dicts(processed_table_dfs_list: List[Dict]) -> List[Dict]:
+    """
+    Function takes in list of dicts with pandas dataframes,
+    Converts dataframes to list of value dicts with non-numeric and numeric values separated
+    """
     final_parsed_list = []
     for item in processed_table_dfs_list:
         # table_html = html["html"]
@@ -174,16 +223,20 @@ def parse_tables_to_value_dicts(processed_table_dfs_list: List) -> List:
         processed_row_headers = process_header_cols(row_headers)
         numeric_values, non_numeric_values = determine_numeric_cells(columns, processed_row_headers)
         value_dicts = get_value_dict(numeric_values, non_numeric_values)
-        final_parsed_list.append({"value_dicts": value_dicts, "non_numeric_values": non_numeric_values, "identifier": identifier, "link": link, "caption": caption, "table_df": updated_table_df})
+        final_parsed_list.append(
+            {"value_dicts": value_dicts, "non_numeric_values": non_numeric_values, "identifier": identifier,
+             "link": link, "caption": caption, "table_df": updated_table_df})
 
     final_table_dict_list = [x for x in final_parsed_list if x["value_dicts"]]
-    a=1
+    a = 1
     return final_table_dict_list
 
 
 def get_value_dict(numeric_values: List[Dict], non_numeric_values: List[Dict]) -> \
         List[Dict]:
-    # bring together each numeric value with all its relevant headers
+    """
+    Brings together each numeric value with all its relevant headers
+    """
     value_dicts = []
     for value in numeric_values:
         col_id = value["column"]
@@ -195,6 +248,9 @@ def get_value_dict(numeric_values: List[Dict], non_numeric_values: List[Dict]) -
 
 
 def determine_numeric_cells(columns: List, header_rs: List) -> Tuple:
+    """
+    Separates out numeric and non-numeric cells in the table
+    """
     numeric_values = []
     non_numeric_values = []
     nans_list = []
@@ -208,7 +264,7 @@ def determine_numeric_cells(columns: List, header_rs: List) -> Tuple:
                 nans_list.append(({"row": k, "column": (counter - 1), "value": v}))
             else:
                 non_numeric_values.append({"row": k, "column": (counter - 1), "value": v, "numeric": False})
-    a=1
+    a = 1
     # check for roll up rows 
     nans_list, roll_up_rows = check_rollup_rows(nans_list, header_rs, counter)
     if roll_up_rows:
@@ -238,8 +294,11 @@ def check_rollup_rows(nans_list: List, row_headers: List, counter: int) -> Tuple
 
 
 def process_nan_values(nans_list: List[Dict], numeric_values: List[Dict], non_numeric_values: List[Dict]):
-    """Assumptions: if all other values in a row or column are numeric (excluding header columns and rows)
-     then this function interprets a nan as numeric and adds it to the numeric values list """
+    """
+    Decides if a nan value is a numeric value or non-numeric value based on other values in its column/row
+    Assumptions: if all other values in a row or column are numeric (excluding header columns and rows)
+    then this function interprets a nan as numeric and adds it to the numeric values list
+    """
     for nan in nans_list:
         row = nan["row"]
         col = nan["column"]
@@ -267,6 +326,9 @@ def process_header_rows(row_headers: List) -> List[Dict]:
 
 
 def process_header_cols(col_headers: List) -> List[Dict]:
+    """
+    Gets column headers into right format with row and column values
+    """
     processed_col_headers = []
     for header in col_headers:
         for k, v in header.items():
@@ -275,6 +337,9 @@ def process_header_cols(col_headers: List) -> List[Dict]:
 
 
 def separate_columns(table_dict: Dict):
+    """
+    Separates out the dataframe dictionary into columns
+    """
     columns = []
     row_headers = []
     counter = 0
@@ -288,6 +353,9 @@ def separate_columns(table_dict: Dict):
 
 
 def match(s: str) -> bool:
+    """
+    Matches any alpha characters
+    """
     # ([^a-zA-Z]+)$, (\d+(?:\.\d+)?)
     if s == "nan":
         return True
@@ -298,7 +366,9 @@ def match(s: str) -> bool:
 
 
 def process_table_dfs(table_dfs_list: List) -> List[Dict]:
-
+    """
+    Splits any tables with mid-table subheaders (marked with double null rows)
+    """
     processed_table_dfs_list = []
     for entry in table_dfs_list:
         my_df = entry["table_df"]
@@ -306,8 +376,7 @@ def process_table_dfs(table_dfs_list: List) -> List[Dict]:
         ident = entry["identifier"]
         link = entry["link"]
 
-
-        #my_df = pd.DataFrame([['tom', 10], ['nick', 15], [None, None], [None, None], ['juli', 14], ['nick', 15], [None, None], [None, None], ['juli', 14], ['tom', 10], ['nick', 15]])
+        # my_df = pd.DataFrame([['tom', 10], ['nick', 15], [None, None], [None, None], ['juli', 14], ['nick', 15], [None, None], [None, None], ['juli', 14], ['tom', 10], ['nick', 15]])
         index_of_null_rows = my_df[my_df.isnull().all(axis=1)].index.tolist()
         index_of_part_null_rows = my_df[my_df.isnull().any(axis=1)].index.tolist()
         consecutive_list1 = [as_range(p) for _, p in
@@ -322,14 +391,18 @@ def process_table_dfs(table_dfs_list: List) -> List[Dict]:
             dfs_list = split_on_subheader_nulls(ident, my_df, consecutive_list_updated)
             for dfs in dfs_list:
                 if dfs["header"] != "1":
-                    processed_table_dfs_list.append({"table_df": dfs["df"], "caption": caption, "identifier": dfs["header"], "link": link})
+                    processed_table_dfs_list.append(
+                        {"table_df": dfs["df"], "caption": caption, "identifier": dfs["header"], "link": link})
         else:
             processed_table_dfs_list.append(entry)
-    a=1
+    a = 1
     return processed_table_dfs_list
 
 
 def split_df_on_index_list(index_list: List):
+    """
+    Creates list of indexes to split dataframe with
+    """
     split_list = []
     for value_pair in index_list:
         split_value = value_pair[0]
@@ -338,6 +411,9 @@ def split_df_on_index_list(index_list: List):
 
 
 def split_df_on_split_list(ident: str, split_list: List, my_df: pd.DataFrame):
+    """
+    Splits dataframe based on index list
+    """
     dfs_list = []
     df1 = my_df[:split_list[0]]
     counter = 1
@@ -357,20 +433,26 @@ def split_df_on_split_list(ident: str, split_list: List, my_df: pd.DataFrame):
             df2 = 1
             df2_label = "1"
             print("empty_df")
-    a=1
+    a = 1
     return dfs_list
 
 
 def split_on_subheader_nulls(ident: str, my_df: pd.DataFrame, consecutive_list: List):
-    #consecutive_list = [item for sublist in consecutive_list for item in sublist]
+    """
+    Splits dataframe based on subheader nulls (2 null rows in a row within a table)
+    """
+    # consecutive_list = [item for sublist in consecutive_list for item in sublist]
     split_list = split_df_on_index_list(consecutive_list
                                         )
     dfs_list = split_df_on_split_list(ident=ident, split_list=split_list, my_df=my_df)
-    a=1
+    a = 1
     return dfs_list
 
 
 def tidy_up_null_rows_df(my_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drop any totally null rows from dataframe
+    """
     tidy_df = my_df.dropna(axis=0, how='all')
     return tidy_df
 
@@ -383,14 +465,19 @@ def as_range(iterable):
         pass
 
 
-def convert_htmls_to_dfs(json_list: List) -> List:
+def convert_htmls_to_dfs(json_list: List[Dict]) -> List[Dict]:
+    """
+    Function takes in list of dicts with html dataframes from files processed with XML Preprocessing script,
+    Converts html tables to pandas dataframes and outputs a list of dicts
+    """
     df_list = []
     counter = 0
     for item in json_list:
         html = item["html"]
         text = item["text"]
         link = item["pmc_link"]
-        caption = re.findall("\<h4>(.*?)\</h4>", html)
+        caption = item["caption"]
+        #caption = re.findall("\<h4>(.*?)\</h4>", html)
         try:
             pd_table = pd.read_html(html, header=None)  # header=[0]
             table_df = pd_table[0]
@@ -399,7 +486,7 @@ def convert_htmls_to_dfs(json_list: List) -> List:
             print(text)
             counter += 1
     print(f"Could not convert {counter} htmls to dataframes")
-    a=1
+    a = 1
     return df_list
 
 
