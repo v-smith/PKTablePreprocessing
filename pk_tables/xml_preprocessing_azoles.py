@@ -20,14 +20,11 @@ def tables_to_dict(path_to_file) -> List:
     Converts tables in xml papers to dictionary
     """
     tree = etree.parse(path_to_file)
-    # root = tree.getroot()
     article_info = tree.xpath("//front//article-meta")
     tables = tree.xpath("//body//sec//table-wrap")
-    # article_title = tree.xpath("//front//article-title")
-    # title = [tit.text for tit in article_title]
     for info in article_info:
         try:
-            pmc = info.find("article-id[@pub-id-type= 'pmc']").text
+            PMC = info.find("article-id[@pub-id-type= 'pmc']").text
             pmid = info.find("article-id[@pub-id-type= 'pmid']").text
         except:
             print(info)
@@ -40,14 +37,13 @@ def tables_to_dict(path_to_file) -> List:
         table_xml = etree.tostring(table.find('table'), encoding='unicode')
         html_template = "<!DOCTYPE html><html><body><h4>{0}</h4><head><style> table, th, td {{border: 1px solid black;}}</style></head><body>{1}</body></html>"
         html = html_template.format(caption, table_xml)
-        table_dict = {"text": f"PMC{pmc} | {label} | DOI: {doi}",
-                      "pmc_link": f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{pmc}",
+        table_dict = {"text": f"PMC{PMC} | {label} | PMID: {pmid}",
+                      "pmc_link": f"https://www.ncbi.nlm.nih.gov/pmc/articles/PMC{PMC}",
                       "html": html,
                       "caption": caption}
         table_dicts.append(table_dict)
-        a = 1
-
     return table_dicts
+
 
 
 def write_html(table_dicts, path):
@@ -94,7 +90,7 @@ def apply_to_all(file_list, json_path):
         try:
             table_dict = tables_to_dict(file)
             if table_dict is not []:
-                table_list += table_dict
+                table_list.extend(table_dict)
         except Exception as err:
             pass
             total_count += 1
