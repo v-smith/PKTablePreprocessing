@@ -5,7 +5,7 @@ import os
 from lxml import etree
 from io import StringIO
 import jsonlines
-from tqdm import tqdm
+#from tqdm import tqdm
 
 
 def stringify_children(node):
@@ -86,7 +86,7 @@ def apply_to_all(file_list, json_path):
     """Function to apply tables to dict to all files in file_list"""
     table_list = []
     total_count = 0
-    for file in tqdm(file_list):
+    for file in file_list:
         try:
             table_dict = tables_to_dict(file)
             if table_dict is not []:

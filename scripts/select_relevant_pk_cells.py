@@ -1,15 +1,13 @@
 import jsonlines
-from operator import itemgetter
-from itertools import groupby
 import collections
 
-with jsonlines.open("../data/json/cell_entities/parsed_test_ner_1000_entities.jsonl") as reader:
+with jsonlines.open("../data/json/cell_entities/parsed_val_ner_1000_entities.jsonl") as reader:
     json_list = []
     for obj in reader:
         json_list.append(obj)
 
 with jsonlines.open(
-        "../data/json/pk_tablesclass_data/relevant/prodigy-out/table_choose_test_1000_final.jsonl") as reader2:
+        "../data/json/pk_tablesclass_data/relevant/prodigy-out/table_choose_val_1000_final.jsonl") as reader2:
     json_list2 = []
     for obj2 in reader2:
         json_list2.append(obj2)
@@ -25,6 +23,7 @@ for item in json_list2:
     else:
         rem_list.append(item["table_id"])
 
+# this should equal next
 print((len(not_rel_list) + len(rem_list) + len(rel_list)))
 print(len(json_list2))
 
@@ -50,6 +49,7 @@ for lst in keep_rel_result_list:
             keep_rel_no_repeats.append(dic)
             texts.append(dic["text"])
 
+# just info, don't expect these to equal
 print(len(keep_rel_list))
 print(len(keep_not_rel_list))
 print((len(json_list)))
@@ -75,17 +75,17 @@ a = 1
 counter = 0
 for lines in split_keep_rel_no_repeats:
     counter += 1
-    with jsonlines.open(("../data/json/cell_entities/pk_relevant/split_no_repeats/" + "parsed_test_ner_1000_entities_Rel_NoReps_" + str(counter) + ".jsonl"),
+    with jsonlines.open(("../data/json/cell_entities/pk_relevant/split_no_repeats/" + "parsed_val_ner_1000_entities_Rel_NoReps_" + str(counter) + ".jsonl"),
                         mode='w') as writer:
         writer.write_all(lines)
 
 #write out full relevant list for this dataset all cells (inc repeats)
-with jsonlines.open(("../data/json/cell_entities/pk_relevant/" + "parsed_test_ner_1000_entities_Rel.jsonl"),
+with jsonlines.open(("../data/json/cell_entities/pk_relevant/" + "parsed_val_ner_1000_entities_Rel.jsonl"),
                     mode='w') as writer:
     writer.write_all(keep_rel_list)
 
 #write out full not relevant list for this dataset with all cells (inc repeats)
-with jsonlines.open("../data/json/cell_entities/not_relevant/" + "parsed_test_ner_1000_entities_NotRel.jsonl",
+with jsonlines.open("../data/json/cell_entities/not_relevant/" + "parsed_val_ner_1000_entities_NotRel.jsonl",
                     mode='w') as writer:
     writer.write_all(keep_not_rel_list)
 

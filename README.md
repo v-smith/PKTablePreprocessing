@@ -1,7 +1,8 @@
 # PKTablePreprocessing
 
 Order of Events: 
-1. Parse papers to tables in jsonl file using xml_script.py 
+1a. Untar pubmed files
+1b. Parse papers to tables in jsonl file using xml_script.py 
 2. Please note that all the PK relevant paper tables (as selected by ferran's doc classifier) are present in pk_pmcs_ner_dec2021/selected_pk_tables.jsonl
 3. parse table table into cell data --> scripts/table_data_extraction_script.py
 4. parse cells into distilbert to match PK entities --> use_distilbert.py
@@ -101,22 +102,10 @@ cd grobid/
 
 ```
 
-# Download the files into a single xml file from PubMed FTP site from list of pmc ids or pmids
+## Download the files into a single xml file from PubMed FTP site from list of pmc ids or pmids
 ```
 wget https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=13900,13901&retmode=xml&retmax=200 -P /home/vsmith/PycharmProjects/PKTablePreprocessing/data/vicky_pmc_xmls/
 https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pmc&id=212403
 ```
 
-"""
-GRPBID ERROR 
-Failed error 408: - manual or noncomm 
-PMID27324763.pdf  
-PMID31971567.pdf
-PMID16641468.pdf
-PMID25779580.pdf
-PMID26239045.pdf
-PMID14616415.pdf
-PMID17606672.pdf
-PMID32468741.pdf
-PMID11302829.pdf
-"""
+# 
