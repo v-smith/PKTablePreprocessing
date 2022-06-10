@@ -1,6 +1,6 @@
 import jsonlines
 
-with jsonlines.open("../data/json/cell_entities/parsed_val_ner__entities.jsonl") as reader:
+with jsonlines.open("../data/json/cell_entities/parsed_val_ner_entities.jsonl") as reader:
     json_list = []
     for obj in reader:
         json_list.append(obj)

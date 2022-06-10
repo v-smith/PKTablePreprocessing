@@ -1,6 +1,6 @@
 # imports
 import pandas as pd
-from bs4 import BeautifulSoup
+#from bs4 import BeautifulSoup
 import re
 from typing import List, Tuple, Dict, Any, Union
 import itertools
@@ -24,7 +24,7 @@ def parse_xml_tables(json_list: List[Dict], pkl_file_name: str) -> List[Dict]:
     jsonl_text_dict_list, hash_list = covert_to_ner_jsonl(parsed_table_dict_list)
     write_hashes_html_pickle(hash_list, pkl_file_name)
     my_pickle = pickle.load(open("../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, 'rb'))
-    assert len(my_pickle) == len(hash_list)
+    #assert len(my_pickle) == len(hash_list)
     a = 1
     return jsonl_text_dict_list
 
@@ -91,7 +91,7 @@ def write_hashes_html_pickle(hash_list: List, pkl_file_name: str):
         html = item["html"]
         hash_dict[hash] = html
 
-    with open(r"../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, "wb") as f:
+    with open(r"../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, "ab") as f:
         pickle.dump(hash_dict, f)
 
     # my_pickle = pickle.load(open('../data/parsed_table_jsons/table_hashes_2.pkl', 'rb'))

@@ -10,6 +10,7 @@ def find_pdf_coords(table_dims, image_dims, page):
     height = page.height
     width = page.width
 
+    a=1
     #ration of table to whole image coords
     ratio_x0 = table_dims[0]/image_dims[1]
     ratio_y0 = table_dims[1]/image_dims[0]
@@ -49,7 +50,7 @@ a = 1
 
 tables = camelot.read_pdf('../data/vicky_togrobid_papers/vicky_pmc_togrobid_papers/PMID1605615.pdf', pages='3',
                           flavor='stream', table_areas=bounding_box_camelot) #['168,236,836,1572']
-camelot.plot(tables[0], kind='text').show()
+#camelot.plot(tables[0], kind='text').show()
 camelot.plot(tables[0], kind='contour').show()
 df2 = tables[0].df
 # tables[0].parsing_report
