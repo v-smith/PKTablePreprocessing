@@ -23,4 +23,3 @@ with jsonlines.open("../data/pk_tablesclass_data/relevant/" + "parsed_val_ner__r
 with jsonlines.open("../data/pk_tablesclass_data/not_rel/" + "parsed_val_ner__NotRelevant_forclass.jsonl", mode='w') as writer:
     writer.write_all(not_relevant_for_class)
 
-a=1
