@@ -1,7 +1,7 @@
 # imports
 import jsonlines
 from typing import List
-####hello
+
 
 def replace_list_fromdict(l: list, dictionary: dict) -> List:
     """Function to replace all values in a list with values from dictionary"""
@@ -31,6 +31,7 @@ def labels_update(covs_list: List[dict]) -> List[dict]:
         replace_list_fromdict(dic["accept"], one_dict)
 
     return covs_list
+
 
 def concat_lists(params_list: List[dict], new_covs_list: List[dict]) -> List[dict]:
     """Function to concat 2 lists based on table ID and combine labels for params and covs"""
@@ -81,6 +82,3 @@ def concat_parwithcovs(par_file: str, cov_file: str, out_file: str, check_text: 
         writer.write_all(final_json)
 
     print(f"Length of out list: {len(final_json)}")
-
-
-

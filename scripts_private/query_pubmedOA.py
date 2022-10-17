@@ -1,8 +1,8 @@
-import os
 from os import listdir
 from os.path import isfile, join
-import pandas
 from shutil import copyfile
+
+import pandas
 
 only_files = [".".join(f.split(".")[:-1]) for f in listdir("../data/azole_final_papers") if
               isfile(join("../data/azole_final_papers", f))]

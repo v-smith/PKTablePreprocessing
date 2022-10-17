@@ -5,6 +5,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data" />
       <excludeFolder url="file://$MODULE_DIR$/prodigy-1.10.5-cp36.cp37.cp38-cp36m.cp37m.cp38-linux_x86_64" />
       <excludeFolder url="file://$MODULE_DIR$/models" />
+      <excludeFolder url="file://$MODULE_DIR$/scripts_private" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.9 (PKTablePreprocessing)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

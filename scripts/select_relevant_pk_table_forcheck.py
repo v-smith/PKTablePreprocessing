@@ -14,8 +14,7 @@ relevant_list_for_class = [item for item in relevant_list if item["col"] == "na"
 not_relevant_list = [item for item in json_list if item["table_id"] not in relevant_ids]
 not_relevant_for_class = [item for item in not_relevant_list if item["col"] == "na"]
 
-print(len(relevant_list) + len(not_relevant_list))
-print(len(json_list))
+assert (len(relevant_list) + len(not_relevant_list)) == len(json_list)
 
 with jsonlines.open("../data/json/pk_tablesclass_data/relevant/" + "parsed_val_ner__relevant_forclass.jsonl", mode='w') as writer:
     writer.write_all(relevant_list_for_class)

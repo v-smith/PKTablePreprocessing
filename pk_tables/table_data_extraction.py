@@ -1,6 +1,6 @@
 # imports
 import pandas as pd
-#from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup
 import re
 from typing import List, Tuple, Dict, Any, Union
 import itertools
@@ -14,17 +14,16 @@ def parse_xml_tables(json_list: List[Dict], pkl_file_name: str) -> List[Dict]:
     """
     # convert xml tables to dataframes
     table_dfs_list = convert_htmls_to_dfs(json_list)
-    # demo_df = table_dfs_list[0]["table_df"]
 
     # parse to value dicts
     parsed_table_dict_list = parse_tables_to_value_dicts(table_dfs_list)
-    # demo_dict_list = parsed_table_dict_list[0]["value_dicts"]
 
-    #convert to labelling format
+    # convert to labelling format
     jsonl_text_dict_list, hash_list = covert_to_ner_jsonl(parsed_table_dict_list)
+
     write_hashes_html_pickle(hash_list, pkl_file_name)
     my_pickle = pickle.load(open("../data/json/parsed_pk_pmcs_ner_dec2021/" + pkl_file_name, 'rb'))
-    #assert len(my_pickle) == len(hash_list)
+    assert len(my_pickle) == len(hash_list)
     a = 1
     return jsonl_text_dict_list
 
@@ -110,7 +109,9 @@ def convert_to_set(name: str, list_of_dicts: List[Dict]) -> List[Dict]:
     return row_non
 
 
-def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
+def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> tuple[
+    list[Union[dict[str, Union[Union[str, dict[str, Any]], Any]], dict[str, Union[Union[str, dict[str, Any]], Any]]]],
+    list[dict[str, Union[Union[str, {encode}], Any]]]]:
     """
     Subsets non-numeric cells for labelling in prodigy
     Adds captions for labelling
@@ -165,39 +166,6 @@ def covert_to_ner_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
         all_tables_for_jsonl.extend(table_for_jsonl)
         a = 1
     return all_tables_for_jsonl, hash_list
-
-
-'''
-def covert_to_labelling_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
-    all_tables_for_jsonl = []
-    hash_list = []
-    for item in final_table_dict_list:
-        table_df = item["table_df"]
-        id = item["identifier"]
-        dics = item["value_dicts"]
-        # get unique non_numeric cell values
-        all_non_vals = convert_to_set('non_numeric_values', dics)
-        # drop if "Unnamed"
-        all_non_vals_cleaned = [x for x in all_non_vals if not re.match("Unnamed", x["value"])]
-        text_all_vals = [x["value"] for x in all_non_vals_cleaned]
-        text_label_col = [x["column"] for x in all_non_vals_cleaned]
-        text_label_row = [x["row"] for x in all_non_vals_cleaned]
-
-        table_for_jsonl = []
-        #sub_hash_list = []
-        for t, c, r in zip(text_all_vals, text_label_col, text_label_row):
-            styled_html = style_dataframes(table_df, t, c, r)
-            hash_dict = hash_html_tables(styled_html, t)
-            hash_list.append(hash_dict)
-            table_for_jsonl.append({"text": t, "col": c, "row": r, "html": hash_dict["hash"], "table_id": id,
-                                    "meta": {"DOI": id, "Table": id}}),
-
-        all_tables_for_jsonl.extend(table_for_jsonl)
-        sorted_all_tables_for_jsonl = sorted(all_tables_for_jsonl, key=lambda d: (d['col'], d["row"]))
-
-        a = 1
-    return sorted_all_tables_for_jsonl, hash_list
-'''
 
 
 def parse_tables_to_value_dicts(processed_table_dfs_list: List[Dict]) -> List[Dict]:
@@ -476,8 +444,10 @@ def convert_htmls_to_dfs(json_list: List[Dict]) -> List[Dict]:
         html = item["html"]
         text = item["text"]
         link = item["pmc_link"]
-        caption = item["caption"]
-        #caption = re.findall("\<h4>(.*?)\</h4>", html)
+        try:
+            caption = item["caption"]
+        except:
+            caption = re.findall("\<h4>(.*?)\</h4>", html)
         try:
             pd_table = pd.read_html(html, header=None)  # header=[0]
             table_df = pd_table[0]
@@ -543,3 +513,35 @@ def parse_html_table(html: str) -> pd.DataFrame:
             pass
 
     return df
+
+'''
+def covert_to_labelling_jsonl(final_table_dict_list: List[Dict]) -> List[Dict]:
+    all_tables_for_jsonl = []
+    hash_list = []
+    for item in final_table_dict_list:
+        table_df = item["table_df"]
+        id = item["identifier"]
+        dics = item["value_dicts"]
+        # get unique non_numeric cell values
+        all_non_vals = convert_to_set('non_numeric_values', dics)
+        # drop if "Unnamed"
+        all_non_vals_cleaned = [x for x in all_non_vals if not re.match("Unnamed", x["value"])]
+        text_all_vals = [x["value"] for x in all_non_vals_cleaned]
+        text_label_col = [x["column"] for x in all_non_vals_cleaned]
+        text_label_row = [x["row"] for x in all_non_vals_cleaned]
+
+        table_for_jsonl = []
+        #sub_hash_list = []
+        for t, c, r in zip(text_all_vals, text_label_col, text_label_row):
+            styled_html = style_dataframes(table_df, t, c, r)
+            hash_dict = hash_html_tables(styled_html, t)
+            hash_list.append(hash_dict)
+            table_for_jsonl.append({"text": t, "col": c, "row": r, "html": hash_dict["hash"], "table_id": id,
+                                    "meta": {"DOI": id, "Table": id}}),
+
+        all_tables_for_jsonl.extend(table_for_jsonl)
+        sorted_all_tables_for_jsonl = sorted(all_tables_for_jsonl, key=lambda d: (d['col'], d["row"]))
+
+        a = 1
+    return sorted_all_tables_for_jsonl, hash_list
+'''

@@ -1,11 +1,14 @@
 # imports
+import pandas as pd
+
 
 def split_by_ann(df):
     """Function to return a dictionary of output dfs for each annotator"""
-    ann_list= list(df._session_id.unique())
+    ann_list = list(df._session_id.unique())
     ann_dfs = {ann.split("-")[3]: df[df['_session_id'] == ann] for ann in ann_list}
 
     return ann_dfs
+
 
 def sublist_uniques(data, sublist):
     """Find categories in a column containing lists"""
@@ -26,7 +29,7 @@ def sublists_to_dummies(f, sublist, index_key=None):
     for d, i in f.iterrows():
         if type(i[sublist]) == list or np.array:
             try:
-                if index_key != None:
+                if index_key is not None:
                     key = i[index_key]
                     f = np.zeros(len(categories))
                     for j in i[sublist]:
@@ -45,5 +48,3 @@ def sublists_to_dummies(f, sublist, index_key=None):
                 pass
 
     return frame
-
-

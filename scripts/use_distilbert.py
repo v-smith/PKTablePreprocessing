@@ -1,3 +1,4 @@
+"""Script to apply trained distilbert PK NER model to table cells"""
 import multiprocessing
 import pathlib
 from pk_tables import ner_demo
@@ -5,28 +6,21 @@ from transformers import BertTokenizerFast
 import jsonlines
 import os
 from tqdm import tqdm
+import torch
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
-###############################################################################
 
-
-# import my table data and process to input into the model
+# import table data and process to input into the model
 with jsonlines.open("../data/json/parsed_pk_pmcs_ner_dec2021/parsed_remaining_ner.jsonl") as reader:
     json_list = []
     for obj1 in reader:
         json_list.append(obj1)
 
-# json_list = json_list[:10]
-
-############################ Example Data #####################################
-
-# cells = ["Vd", "Cmax", "t(1/2)", "area under the curve", "tmax", "hello", "no", "yes", "tdog"]
-
 ############################ Predict Entities ################################
+
 PATH = pathlib.Path(__file__).parent
-# NER_DATA_PATH = PATH.joinpath("../datasets/pknerdemo").resolve()
 NER_MPATH = "../models/distilbert-epoch=0012-val_f1_strict=0.85.ckpt"
-GPUS = False  # torch.cuda.is_available()
+GPUS = torch.cuda.is_available()
 CPUS = multiprocessing.cpu_count()
 NER_MODEL = ner_demo.load_pretrained_model(model_checkpoint_path=NER_MPATH, gpu=GPUS)
 NER_TOKENIZER = BertTokenizerFast.from_pretrained(NER_MODEL.bert.name_or_path)
@@ -56,7 +50,6 @@ def predic_ner(inp_text: str):
     return final_ent_offsets
 
 
-##############################
 instance_list = []
 for item in tqdm(json_list):
     out_ents = predic_ner(inp_text=item["text"])
@@ -69,8 +62,6 @@ instance_list = [item for sublist in instance_list for item in sublist]
 with jsonlines.open("../data/json/cell_entities/" + "parsed_remaining_ner_entities.jsonl", mode='w') as writer:
     writer.write_all(instance_list)
 
-# print(*instance_list, sep="\n")
-
 pk_ent_tableid_list = []
 for inst in instance_list:
     if inst["ents"]:
@@ -80,5 +71,3 @@ pk_ent_tableid_list_uniques = list(set(pk_ent_tableid_list))
 
 with open("../data/json/relevant_ids/" + "parsed_remaining_ner_ids_distilbert.txt", "w") as f:
     f.write("\n".join(pk_ent_tableid_list_uniques))
-
-a = 1
