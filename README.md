@@ -3,8 +3,8 @@
 This project provides scripts to parse, preprocess, annotate and review Pharmacokinetic tables and table cell text from the PubMed Open Access Subset of papers in XML formt. 
 
 ## Table Preprocessing Steps: 
-1a. Untar pubmed files
-1b. Parse papers to tables in jsonl file using xml_script.py 
+
+1. Untar pubmed files and Parse papers to tables in jsonl file using xml_script.py 
 2. Please note that all the PK relevant paper tables are present in data/pk_pmcs_ner_dec2021/selected_pk_tables.jsonl
 3. parse tables into cell data --> scripts/table_data_extraction_script.py
 4. parse cells into distilbert to match PK entities --> use_distilbert.py
