@@ -8,7 +8,7 @@ params_list = [{"text": 3, "accept": [2, 5]}, {"text": 1, "accept": [1, 3]}, {"t
 labels_update(covs_list)
 
 
-def test_concat_lists(params_list, covs_list):
+def test_concat_lists():
     concat_list = concat_lists(params_list, covs_list)
 
     assert concat_list == [{'text': 3, 'accept': [2, 5, 8, 10]}, {'text': 1, 'accept': [1, 3, 6, 7]},
